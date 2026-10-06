@@ -1,0 +1,57 @@
+{% extends 'polling/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4>Level 1: Individual Polling Unit Result</h4>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="mb-4">
+                    <div class="form-group mb-3">
+                        <label for="pu_id" class="form-label">Select Polling Unit:</label>
+                        <select name="pu_id" id="pu_id" class="form-select" onchange="this.form.submit()">
+                            <option value="">-- Select Polling Unit --</option>
+                            {% for pu in polling_units %}
+                                <option value="{{ pu.uniqueid }}" {% if selected_pu_id == pu.uniqueid|stringformat:"s" %}selected{% endif %}>
+                                    {{ pu.polling_unit_name }} ({{ pu.polling_unit_number }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+
+                {% if selected_pu %}
+                    <h5>Results for: {{ selected_pu.polling_unit_name }}</h5>
+                    <hr>
+                    {% if results %}
+                        <table class="table table-striped table-bordered">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Party</th>
+                                    <th>Score</th>
+                                    <th>Entered By</th>
+                                    <th>Date Entered</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for res in results %}
+                                    <tr>
+                                        <td><strong>{{ res.party_abbreviation }}</strong></td>
+                                        <td>{{ res.party_score }}</td>
+                                        <td>{{ res.entered_by_user|default:"N/A" }}</td>
+                                        <td>{{ res.date_entered }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="alert alert-warning">No announced results found for this Polling Unit.</div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
