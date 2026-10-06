@@ -26,7 +26,7 @@ def level_1_pu_results(request):
         'results': results,
         'selected_pu_id': selected_pu_id
     }
-    return render(request, 'polling/question1_pu_result.html', context)
+    return render(request, 'polling_unit/question1_pu_result.html', context)
 
 
 def level_2_lga_results(request):
