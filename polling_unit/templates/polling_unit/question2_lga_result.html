@@ -1,0 +1,60 @@
+{% extends 'polling/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4>Level 2: Total LGA Results Aggregation</h4>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="mb-4">
+                    <div class="form-group mb-3">
+                        <label for="lga_id" class="form-label">Select Local Government Area (LGA):</label>
+                        <select name="lga_id" id="lga_id" class="form-select" onchange="this.form.submit()">
+                            <option value="">-- Select LGA --</option>
+                            {% for lga in lgas %}
+                                <option value="{{ lga.lga_id }}" {% if selected_lga_id == lga.lga_id|stringformat:"s" %}selected{% endif %}>
+                                    {{ lga.lga_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+
+                {% if selected_lga %}
+                    <h5>Aggregated Results for {{ selected_lga.lga_name }} LGA</h5>
+                    <p class="text-muted">Calculated from total announced results across all polling units in this LGA.</p>
+                    <hr>
+                    {% if party_totals %}
+                        <table class="table table-hover table-bordered">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Party Abbreviation</th>
+                                    <th>Aggregated Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in party_totals %}
+                                    <tr>
+                                        <td><strong>{{ item.party_abbreviation }}</strong></td>
+                                        <td>{{ item.total_score }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-secondary font-weight-bold">
+                                    <th>TOTAL VOTES CAST</th>
+                                    <th>{{ total_lga_votes }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    {% else %}
+                        <div class="alert alert-warning">No recorded polling unit results found for this LGA.</div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
