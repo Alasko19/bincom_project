@@ -1,11 +1,21 @@
 from django.shortcuts import render, redirect
+from django.http import JsonResponse
 from django.db.models import Sum
 from django.utils import timezone
-from .models import PollingUnit, AnnouncedPuResults, Lga, Party
+from .models import PollingUnit, AnnouncedPuResults, Lga, Party, Ward
+
+# AJAX endpoint to get wards based on selected LGA
+def get_wards_by_lga(request):
+    lga_id = request.GET.get('lga_id')
+    wards = Ward.objects.filter(lga_id=lga_id).values('ward_id', 'ward_name')
+    return JsonResponse(list(wards), safe=False)
+
+from django.shortcuts import render
+from .models import PollingUnit, AnnouncedPuResults
 
 def level_1_pu_results(request):
     """
-    Level 1: Display result for any individual Polling Unit.
+    Question 1: Display result for any individual Polling Unit.
     """
     polling_units = PollingUnit.objects.exclude(polling_unit_name__isnull=True).exclude(polling_unit_name__exact='')
     selected_pu_id = request.GET.get('pu_id')
@@ -29,9 +39,11 @@ def level_1_pu_results(request):
     return render(request, 'polling_unit/question1_pu_result.html', context)
 
 
-def level_2_lga_results(request):
+#Aggregated LGA Results
+def question_2_lga_results(request):
     """
-    Level 2: Sum total result of all polling units under a selected Local Government Area (LGA).
+    Summed total result of all polling units under a selected LGA.
+    Does NOT use the 'announced_lga_results' table.
     """
     lgas = Lga.objects.all().order_by('lga_name')
     selected_lga_id = request.GET.get('lga_id')
@@ -44,11 +56,11 @@ def level_2_lga_results(request):
         try:
             selected_lga = Lga.objects.get(lga_id=selected_lga_id)
             
-            # Find all Polling Unit unique IDs in this LGA
+            # Fetch all polling unit uniqueids belonging to this LGA
             pu_uniqueids = PollingUnit.objects.filter(lga_id=selected_lga_id).values_list('uniqueid', flat=True)
             pu_str_ids = [str(uid) for uid in pu_uniqueids]
 
-            # Aggregate scores grouped by Party
+            # Aggregate scores from announced_pu_results dynamically
             party_scores = (
                 AnnouncedPuResults.objects.filter(polling_unit_uniqueid__in=pu_str_ids)
                 .values('party_abbreviation')
@@ -72,9 +84,10 @@ def level_2_lga_results(request):
     return render(request, 'polling/question2_lga_result.html', context)
 
 
-def level_3_add_pu(request):
+# Add Results for New Polling Unit
+def question_3_add_pu(request):
     """
-    Level 3: Page to add results for a new Polling Unit for all registered parties.
+    Page to store results for ALL parties for a new polling unit.
     """
     lgas = Lga.objects.all().order_by('lga_name')
     parties = Party.objects.all()
@@ -88,7 +101,7 @@ def level_3_add_pu(request):
         user_ip = request.META.get('REMOTE_ADDR', '127.0.0.1')
         now = timezone.now()
 
-        # Create new Polling Unit
+        # Create the new Polling Unit
         new_pu = PollingUnit.objects.create(
             polling_unit_name=pu_name,
             polling_unit_number=pu_number,
@@ -99,7 +112,7 @@ def level_3_add_pu(request):
             user_ip_address=user_ip
         )
 
-        # Save score for each party submitted in the form
+        # Save scores for ALL parties for this newly created polling unit
         for party in parties:
             score = request.POST.get(f'party_{party.partyid}', 0)
             AnnouncedPuResults.objects.create(
@@ -111,7 +124,7 @@ def level_3_add_pu(request):
                 user_ip_address=user_ip
             )
 
-        return redirect(f'/?pu_id={new_pu.uniqueid}')
+        return redirect('level_1')
 
     context = {
         'lgas': lgas,

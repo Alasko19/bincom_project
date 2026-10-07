@@ -1,27 +1,31 @@
-{% extends 'polling/base.html' %}
+{% extends 'polling_unit/base.html' %}
 
 {% block content %}
 <div class="row">
     <div class="col-md-8 offset-md-2">
         <div class="card shadow mb-5">
-            <div class="card-header bg-warning text-dark">
-                <h4>Level 3: Enter New Polling Unit & Results</h4>
+            <div class="card-header bg-primary text-white">
+                <h4>Question 3: Enter New Polling Unit & Results</h4>
             </div>
             <div class="card-body">
                 <form method="POST">
                     {% csrf_token %}
-                    <h5 class="text-primary">1. Polling Unit Details</h5>
+                    <h5 class="text-secondary mb-3">1. Polling Unit Information</h5>
+                    
                     <div class="mb-3">
                         <label class="form-label">Polling Unit Name:</label>
-                        <input type="text" name="pu_name" class="form-control" placeholder="e.g., Central Primary School" required>
+                        <input type="text" name="pu_name" class="form-control" required placeholder="e.g. Community Primary School">
                     </div>
+                    
                     <div class="mb-3">
                         <label class="form-label">Polling Unit Number:</label>
-                        <input type="text" name="pu_number" class="form-control" placeholder="e.g., DT1901099" required>
+                        <input type="text" name="pu_number" class="form-control" required placeholder="e.g. PU-01-02-003">
                     </div>
+
+                    <!-- Chained Combo Box 1: Select LGA -->
                     <div class="mb-3">
                         <label class="form-label">Select LGA:</label>
-                        <select name="lga_id" class="form-select" required>
+                        <select name="lga_id" id="id_lga" class="form-select" required>
                             <option value="">-- Select LGA --</option>
                             {% for lga in lgas %}
                                 <option value="{{ lga.lga_id }}">{{ lga.lga_name }}</option>
@@ -29,7 +33,15 @@
                         </select>
                     </div>
 
-                    <h5 class="text-primary mt-4">2. Enter Party Scores</h5>
+                    <!-- Chained Combo Box 2: Wards updated via AJAX -->
+                    <div class="mb-3">
+                        <label class="form-label">Select Ward:</label>
+                        <select name="ward_id" id="id_ward" class="form-select" required>
+                            <option value="">-- Select LGA First --</option>
+                        </select>
+                    </div>
+
+                    <h5 class="text-secondary mt-4 mb-3">2. Enter Scores for ALL Parties</h5>
                     <div class="row">
                         {% for party in parties %}
                             <div class="col-md-6 mb-3">
@@ -39,10 +51,35 @@
                         {% endfor %}
                     </div>
 
-                    <button type="submit" class="btn btn-success w-100 mt-3">Save Polling Unit & Results</button>
+                    <button type="submit" class="btn btn-success w-100 mt-3">Save Polling Unit & Party Results</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<!-- JavaScript for Chained Dropdown/Combo Box -->
+<script>
+document.getElementById('id_lga').addEventListener('change', function() {
+    var lgaId = this.value;
+    var wardSelect = document.getElementById('id_ward');
+    wardSelect.innerHTML = '<option value="">Loading wards...</option>';
+
+    if (lgaId) {
+        fetch('/get-wards/?lga_id=' + lgaId)
+            .then(response => response.json())
+            .then(data => {
+                wardSelect.innerHTML = '<option value="">-- Select Ward --</option>';
+                data.forEach(function(ward) {
+                    var option = document.createElement('option');
+                    option.value = ward.ward_id;
+                    option.textContent = ward.ward_name;
+                    wardSelect.appendChild(option);
+                });
+            });
+    } else {
+        wardSelect.innerHTML = '<option value="">-- Select LGA First --</option>';
+    }
+});
+</script>
 {% endblock %}
